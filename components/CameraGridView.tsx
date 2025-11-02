@@ -7,8 +7,10 @@ import { CameraFullscreenModal } from './common/CameraFullscreenModal';
 import type { Camera, ToastMessage } from '../types';
 
 // Icons for controls
+const Grid1x1Icon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5"><rect width="18" height="18" x="3" y="3" rx="2"/></svg>);
 const Grid2x2Icon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 12h18"/><path d="M12 3v18"/></svg>);
 const Grid3x3Icon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M3 15h18"/><path d="M9 3v18"/><path d="M15 3v18"/></svg>);
+const Grid4x4Icon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 8h18"/><path d="M3 16h18"/><path d="M8 3v18"/><path d="M16 3v18"/></svg>);
 const CycleIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 mr-2"><path d="M4.5 2.5c-2.4 2.8-2.2 7.1.6 9.7"/><path d="m2.6 10.3 2.5.2.2-2.5"/><path d="M19.5 21.5c-2.4-2.8 2.2-7.1-.6-9.7"/><path d="m21.4 13.7-2.5-.2-.2 2.5"/><path d="M11 6.8a5.8 5.8 0 0 0-4.3 9.4"/><path d="M13 17.2a5.8 5.8 0 0 0 4.3-9.4"/></svg>);
 
 interface CameraGridViewProps {
@@ -17,7 +19,7 @@ interface CameraGridViewProps {
   addToast: (message: string, type?: ToastMessage['type']) => void;
 }
 
-type GridLayout = '2x2' | '3x3';
+type GridLayout = '1x1' | '2x2' | '3x3' | '4x4';
 
 export const CameraGridView: React.FC<CameraGridViewProps> = ({ cameras, onBack, addToast }) => {
     const [gridLayout, setGridLayout] = useState<GridLayout>('2x2');
@@ -61,8 +63,10 @@ export const CameraGridView: React.FC<CameraGridViewProps> = ({ cameras, onBack,
     };
 
     const gridClasses = {
+        '1x1': 'grid-cols-1',
         '2x2': 'grid-cols-1 md:grid-cols-2',
         '3x3': 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3',
+        '4x4': 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4',
     };
     
     const fullscreenCamera = cameras.find(c => c.id === fullscreenCameraId) || null;
@@ -80,8 +84,10 @@ export const CameraGridView: React.FC<CameraGridViewProps> = ({ cameras, onBack,
           <div className="flex items-center space-x-2">
                 <Button variant={isCycling ? 'primary' : 'outline'} onClick={handleToggleCycle}><CycleIcon />{isCycling ? 'Dừng' : 'Tự động xoay'}</Button>
                 <div className="flex items-center space-x-1 bg-slate-300/50 dark:bg-slate-800/50 p-1 rounded-lg">
-                    <button onClick={() => setGridLayout('2x2')} className={`p-2 rounded-md ${gridLayout === '2x2' ? 'bg-sky-500/20 text-sky-500' : 'text-slate-500'}`}><Grid2x2Icon /></button>
-                    <button onClick={() => setGridLayout('3x3')} className={`p-2 rounded-md ${gridLayout === '3x3' ? 'bg-sky-500/20 text-sky-500' : 'text-slate-500'}`}><Grid3x3Icon /></button>
+                    <button title="1x1 Grid" onClick={() => setGridLayout('1x1')} className={`p-2 rounded-md ${gridLayout === '1x1' ? 'bg-sky-500/20 text-sky-500' : 'text-slate-500'}`}><Grid1x1Icon /></button>
+                    <button title="2x2 Grid" onClick={() => setGridLayout('2x2')} className={`p-2 rounded-md ${gridLayout === '2x2' ? 'bg-sky-500/20 text-sky-500' : 'text-slate-500'}`}><Grid2x2Icon /></button>
+                    <button title="3x3 Grid" onClick={() => setGridLayout('3x3')} className={`p-2 rounded-md ${gridLayout === '3x3' ? 'bg-sky-500/20 text-sky-500' : 'text-slate-500'}`}><Grid3x3Icon /></button>
+                    <button title="4x4 Grid" onClick={() => setGridLayout('4x4')} className={`p-2 rounded-md ${gridLayout === '4x4' ? 'bg-sky-500/20 text-sky-500' : 'text-slate-500'}`}><Grid4x4Icon /></button>
                 </div>
           </div>
         </div>

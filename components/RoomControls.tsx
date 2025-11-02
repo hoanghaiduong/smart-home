@@ -46,7 +46,7 @@ export const RoomControls: React.FC<RoomControlsProps> = ({ rooms, onSelectRoom,
                 <span className="text-sm font-semibold hidden sm:inline">Tắt hết đèn</span>
             </button>
         </div>
-        <div className="space-y-6">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
             {rooms.map((room) => (
                 <GlassCard 
                   key={room.id} 

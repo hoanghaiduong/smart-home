@@ -1,5 +1,7 @@
 
 
+
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Header } from './components/Header';
 import { StatusOverview } from './components/StatusOverview';
@@ -16,7 +18,7 @@ import { Settings } from './components/Settings';
 import { ToastContainer } from './components/common/ToastContainer';
 import { CameraManagement } from './components/CameraManagement';
 import { CameraGridView } from './components/CameraGridView';
-import type { Room, Device, View, Theme, ToastMessage, ActivityLog, DeviceType, SystemSettings, LightDevice, Camera } from './types';
+import type { Room, Device, View, Theme, ToastMessage, ActivityLog, DeviceType, SystemSettings, LightDevice, Camera, FanDevice, CurtainDevice } from './types';
 
 // Define the type for our status data for better type-checking
 export type StatusColor = 'green' | 'orange' | 'sky' | 'rose';
@@ -228,6 +230,10 @@ const App: React.FC = () => {
   // Ref to store debounce timers for each device
   const deviceUpdateTimers = useRef<Record<string, number>>({});
 
+  // FIX: This function was causing a complex TypeScript error due to spreading a `Partial<Device>`
+  // onto a specific device type, which breaks the discriminated union. The fix involves explicitly
+  // annotating the return type of the inner `map` as `Device` and then carefully updating
+  // properties based on the original `device.type` to ensure type safety.
   const handleUpdateDevice = (roomId: number, deviceId: string, updates: Partial<Device>) => {
       const isContinuousChange = 'brightness' in updates || 'position' in updates || 'speed' in updates || 'temperature' in updates;
 
@@ -235,14 +241,21 @@ const App: React.FC = () => {
       if (isContinuousChange) {
           setRooms(prevRooms => prevRooms.map(room => room.id === roomId ? {
               ...room,
-              devices: room.devices.map(device => {
+              devices: room.devices.map((device): Device => {
                   if (device.id === deviceId) {
-                      const updatedDevice = { ...device, ...updates } as Device;
+                      const updatedDevice = { ...device, ...updates };
                       // Keep state consistent (e.g., if brightness > 0, state is 'on')
-                      if (updatedDevice.type === 'light') updatedDevice.state = updatedDevice.brightness > 0 ? 'on' : 'off';
-                      if (updatedDevice.type === 'fan') updatedDevice.state = updatedDevice.speed > 0 ? 'on' : 'off';
-                      if (updatedDevice.type === 'curtain') updatedDevice.state = updatedDevice.position > 0 ? 'on' : 'off';
-                      return updatedDevice;
+                      if (device.type === 'light') {
+                          const d = updatedDevice as LightDevice;
+                          if (typeof d.brightness === 'number') d.state = d.brightness > 0 ? 'on' : 'off';
+                      } else if (device.type === 'fan') {
+                          const d = updatedDevice as FanDevice;
+                          if (typeof d.speed === 'number') d.state = d.speed > 0 ? 'on' : 'off';
+                      } else if (device.type === 'curtain') {
+                          const d = updatedDevice as CurtainDevice;
+                          if (typeof d.position === 'number') d.state = d.position > 0 ? 'on' : 'off';
+                      }
+                      return updatedDevice as Device;
                   }
                   return device;
               })
@@ -268,18 +281,25 @@ const App: React.FC = () => {
                       if (room.id === roomId) {
                           return {
                               ...room,
-                              devices: room.devices.map(device => {
+                              devices: room.devices.map((device): Device => {
                                   if (device.id === deviceId) {
-                                      const finalDevice = { ...device, ...updates, isLoading: false } as Device;
+                                      const finalDevice = { ...device, ...updates, isLoading: false };
                                       
                                       // Sync state again for consistency
-                                      if ('brightness' in finalDevice && finalDevice.type === 'light') finalDevice.state = finalDevice.brightness > 0 ? 'on' : 'off';
-                                      if ('speed' in finalDevice && finalDevice.type === 'fan') finalDevice.state = finalDevice.speed > 0 ? 'on' : 'off';
-                                      if ('position' in finalDevice && finalDevice.type === 'curtain') finalDevice.state = finalDevice.position > 0 ? 'on' : 'off';
+                                      if (device.type === 'light') {
+                                          const d = finalDevice as LightDevice;
+                                          if (typeof d.brightness === 'number') d.state = d.brightness > 0 ? 'on' : 'off';
+                                      } else if (device.type === 'fan') {
+                                          const d = finalDevice as FanDevice;
+                                          if (typeof d.speed === 'number') d.state = d.speed > 0 ? 'on' : 'off';
+                                      } else if (device.type === 'curtain') {
+                                          const d = finalDevice as CurtainDevice;
+                                          if (typeof d.position === 'number') d.state = d.position > 0 ? 'on' : 'off';
+                                      }
 
                                       const action = updates.state ? `Turned ${updates.state}` : 'Updated';
                                       addActivityLog(action, `${room.name} - ${finalDevice.name}`);
-                                      return finalDevice;
+                                      return finalDevice as Device;
                                   }
                                   return device;
                               }),
@@ -344,10 +364,12 @@ const App: React.FC = () => {
     addToast('Device added successfully', 'success');
   };
 
+  // FIX: Explicitly annotating the return type of the inner map as `Device` helps
+  // TypeScript correctly handle the discriminated union after spreading `deviceData`.
   const handleUpdateDeviceCRUD = (roomId: number, deviceId: string, deviceData: Partial<Device>) => {
       setRooms(prev => prev.map(r => {
           if (r.id === roomId) {
-              return { ...r, devices: r.devices.map(d => d.id === deviceId ? { ...d, ...deviceData } : d) };
+              return { ...r, devices: r.devices.map((d): Device => d.id === deviceId ? { ...d, ...deviceData } as Device : d) };
           }
           return r;
       }));
@@ -373,11 +395,11 @@ const App: React.FC = () => {
     setRooms(prevRooms =>
       prevRooms.map(room => ({
         ...room,
-        // FIX: TypeScript can struggle with type inference on discriminated unions inside a .map()
-        // when using object spread. This was causing a type error. Returning the mapped device
-        // array without the extra type annotations and variables resolves the issue, as
-        // TypeScript can correctly infer the resulting `Device[]` type in this context.
-        devices: room.devices.map(device => {
+        // FIX: Explicitly annotating the return type of the inner map as `Device` helps
+        // TypeScript correctly handle the discriminated union when using object spread.
+        // This resolves a complex type error where the compiler would otherwise fail to
+        // recognize the mapped array as a valid `Device[]`.
+        devices: room.devices.map((device): Device => {
           if (device.type === 'light') {
             return { ...device, state: 'off', brightness: 0 };
           }
